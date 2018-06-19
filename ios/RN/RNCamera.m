@@ -140,12 +140,6 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     if (self.flashMode == RNCameraFlashModeTorch) {
         if (![device hasTorch])
             return;
-        if (![device lockForConfiguration:&error]) {
-            if (error) {
-                RCTLogError(@"%s: %@", __func__, error);
-            }
-            return;
-        }
         if (device.hasTorch && [device isTorchModeSupported:AVCaptureTorchModeOn])
         {
             NSError *error = nil;
@@ -162,12 +156,6 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     } else {
         if (![device hasFlash])
             return;
-        if (![device lockForConfiguration:&error]) {
-            if (error) {
-                RCTLogError(@"%s: %@", __func__, error);
-            }
-            return;
-        }
         if (device.hasFlash && [device isFlashModeSupported:self.flashMode])
         {
             NSError *error = nil;
@@ -184,8 +172,6 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
             }
         }
     }
-
-    [device unlockForConfiguration];
 }
 
 - (void)updateFocusMode
@@ -193,24 +179,16 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     AVCaptureDevice *device = [self.videoCaptureDeviceInput device];
     NSError *error = nil;
 
-    if (![device lockForConfiguration:&error]) {
-        if (error) {
-            RCTLogError(@"%s: %@", __func__, error);
-        }
-        return;
-    }
-
     if ([device isFocusModeSupported:self.autoFocus]) {
         if ([device lockForConfiguration:&error]) {
             [device setFocusMode:self.autoFocus];
+            [device unlockForConfiguration];
         } else {
             if (error) {
                 RCTLogError(@"%s: %@", __func__, error);
             }
         }
     }
-
-    [device unlockForConfiguration];
 }
 
 - (void)updateFocusDepth
@@ -261,16 +239,15 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     AVCaptureDevice *device = [self.videoCaptureDeviceInput device];
     NSError *error = nil;
 
-    if (![device lockForConfiguration:&error]) {
-        if (error) {
-            RCTLogError(@"%s: %@", __func__, error);
-        }
-        return;
-    }
-
     if (self.whiteBalance == RNCameraWhiteBalanceAuto) {
+      if ([device lockForConfiguration:&error]) {
         [device setWhiteBalanceMode:AVCaptureWhiteBalanceModeContinuousAutoWhiteBalance];
         [device unlockForConfiguration];
+      } else {
+        if (error) {
+          RCTLogError(@"%s: %@", __func__, error);
+        }
+      }
     } else {
         AVCaptureWhiteBalanceTemperatureAndTintValues temperatureAndTint = {
             .temperature = [RNCameraUtils temperatureForWhiteBalance:self.whiteBalance],
@@ -288,8 +265,6 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
             }
         }
     }
-
-    [device unlockForConfiguration];
 }
 
 - (void)updatePictureSize
